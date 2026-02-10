@@ -25,28 +25,29 @@ public class MainPage {
     //Кнопка заказать после скролла
     private By afterScrollOrderButton  = By.xpath("(//button[normalize-space()='Заказать'])[2]");
 
-    //Кнопка вопроса
-    private By questionsButtons = By.xpath("//div[@data-accordion-component='AccordionItemButton']");
-
-    //Кнопка ответа
-    private By answersElement = By.xpath("//div[@data-accordion-component='AccordionItemPanel']");
+    //метод элемента для поиска текста вопроса
+    public WebElement getQuestionByText(String text) {
+        return driver.findElement(
+                By.xpath(".//div[@class='accordion__button' and text()='" + text + "']")
+        );
+    }
+    //метод элемента для поиска текста ответа
+    public WebElement getAnswerByQuestionText(String questionText) {
+        return driver.findElement(
+                By.xpath(
+                        "//div[@data-accordion-component='AccordionItemPanel' and normalize-space()='" + questionText + "']"
+                )
+        );
+    }
 
     private By buttonYandex = By.cssSelector(".Header_LogoYandex__3TSOI");
 
 
-    public void pressButtonYandex(){
+     public void pressButtonYandex(){
         driver.findElement(buttonYandex).click();
     }
 
 
-
-    public List<WebElement> getListQuestionElements(){
-        return driver.findElements(questionsButtons);
-    }
-
-    public List<WebElement> getListAnswersElements(){
-        return driver.findElements(answersElement);
-    }
 
 
 

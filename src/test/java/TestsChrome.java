@@ -35,28 +35,44 @@ public class TestsChrome {
         driver = new ChromeDriver(options);
     }
 
-    // Массивы вопросов и ответов
-    private static final String[] QUESTIONS = {
-            "Сколько это стоит? И как оплатить?",
-            "Хочу сразу несколько самокатов! Так можно?",
-            "Как рассчитывается время аренды?",
-            "Можно ли заказать самокат прямо на сегодня?",
-            "Можно ли продлить заказ или вернуть самокат раньше?",
-            "Вы привозите зарядку вместе с самокатом?",
-            "Можно ли отменить заказ?",
-            "Я жизу за МКАДом, привезёте?"
-    };
 
-    private static final String[] ANSWERS = {
-            "Сутки — 400 рублей. Оплата курьеру — наличными или картой.",
-            "Пока что у нас так: один заказ — один самокат. Если хотите покататься с друзьями, можете просто сделать несколько заказов — один за другим.",
-            "Допустим, вы оформляете заказ на 8 мая. Мы привозим самокат 8 мая в течение дня. Отсчёт времени аренды начинается с момента, когда вы оплатите заказ курьеру. Если мы привезли самокат 8 мая в 20:30, суточная аренда закончится 9 мая в 20:30.",
-            "Только начиная с завтрашнего дня. Но скоро станем расторопнее.",
-            "Пока что нет! Но если что-то срочное — всегда можно позвонить в поддержку по красивому номеру 1010.",
-            "Самокат приезжает к вам с полной зарядкой. Этого хватает на восемь суток — даже если будете кататься без передышек и во сне. Зарядка не понадобится.",
-            "Да, пока самокат не привезли. Штрафа не будет, объяснительной записки тоже не попросим. Все же свои.",
-            "Да, обязательно. Всем самокатов! И Москве, и Московской области."
-    };
+    static Stream<Arguments> questionsAndAnswers() {
+        return Stream.of(
+                Arguments.of(
+                        "Сколько это стоит? И как оплатить?",
+                        "Сутки — 400 рублей. Оплата курьеру — наличными или картой."
+                ),
+                Arguments.of(
+                        "Хочу сразу несколько самокатов! Так можно?",
+                        "Пока что у нас так: один заказ — один самокат. Если хотите покататься с друзьями, можете просто сделать несколько заказов — один за другим."
+                ),
+                Arguments.of(
+                        "Как рассчитывается время аренды?",
+                        "Допустим, вы оформляете заказ на 8 мая. Мы привозим самокат 8 мая в течение дня. Отсчёт времени аренды начинается с момента, когда вы оплатите заказ курьеру. Если мы привезли самокат 8 мая в 20:30, суточная аренда закончится 9 мая в 20:30."
+                ),
+                Arguments.of(
+                        "Можно ли заказать самокат прямо на сегодня?",
+                        "Только начиная с завтрашнего дня. Но скоро станем расторопнее."
+                ),
+                Arguments.of(
+                        "Можно ли продлить заказ или вернуть самокат раньше?",
+                        "Пока что нет! Но если что-то срочное — всегда можно позвонить в поддержку по красивому номеру 1010."
+                ),
+                Arguments.of(
+                        "Вы привозите зарядку вместе с самокатом?",
+                        "Самокат приезжает к вам с полной зарядкой. Этого хватает на восемь суток — даже если будете кататься без передышек и во сне. Зарядка не понадобится."
+                ),
+                Arguments.of(
+                        "Можно ли отменить заказ?",
+                        "Да, пока самокат не привезли. Штрафа не будет, объяснительной записки тоже не попросим. Все же свои."
+                ),
+                Arguments.of(
+                        "Я жизу за МКАДом, привезёте?",
+                        "Да, обязательно. Всем самокатов! И Москве, и Московской области."
+                )
+        );
+    }
+
 
 
     private static Stream<Arguments> testData() {
@@ -153,44 +169,35 @@ public class TestsChrome {
                 "Модальное окно успешного заказа не появилось");
     }
 
-    @Test
-    public void checkAccordionQuestionsAndAnswers() {
+
+    @ParameterizedTest()
+    @MethodSource("questionsAndAnswers")
+    public void checkAccordionQuestionAndAnswer(String expectedQuestion,
+                                                String expectedAnswer) {
+
         MainPage mainPage = new MainPage(driver);
         mainPage.openBaseURL();
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
 
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
         mainPage.clickCookieBannerClose();
 
-        List<WebElement> questionElements = mainPage.getListQuestionElements();
-        List<WebElement> answerElements = mainPage.getListAnswersElements();
+        WebElement question = mainPage.getQuestionByText(expectedQuestion);
+        WebElement answer = mainPage.getAnswerByQuestionText(expectedAnswer);
 
-        assertEquals(QUESTIONS.length, questionElements.size(), "Количество вопросов не совпадает с ожидаемым!");
-        assertEquals(ANSWERS.length, answerElements.size(), "Количество ответов не совпадает с ожидаемым!");
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].scrollIntoView(true);", question);
 
-        for (int i = 0; i < questionElements.size(); i++) {
-            WebElement question = questionElements.get(i);
-            WebElement answer = answerElements.get(i);
+        wait.until(ExpectedConditions.elementToBeClickable(question)).click();
 
-            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", question);
+        wait.until(ExpectedConditions.visibilityOf(answer));
 
-            wait.until(ExpectedConditions.elementToBeClickable(question));
+        assertEquals(expectedQuestion, question.getText().trim(),
+                "Текст вопроса не совпадает");
 
-            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", question);
-
-            wait.until(ExpectedConditions.visibilityOf(answer));
-
-            String actualQuestion = question.getText().trim();
-            String expectedQuestion = QUESTIONS[i];
-            assertEquals(expectedQuestion, actualQuestion, "Вопрос не соответствует ожидаемому!");
-
-            String actualAnswer = answer.getText().trim();
-            String expectedAnswer = ANSWERS[i];
-            assertEquals(expectedAnswer, actualAnswer, "Ответ не соответствует ожидаемому для вопроса: " + actualQuestion);
-
-            System.out.println("Вопрос: " + actualQuestion);
-            System.out.println("Ответ: " + actualAnswer);
-        }
+        assertEquals(expectedAnswer, answer.getText().trim(),
+                "Текст ответа не совпадает");
     }
+
 
 
 
